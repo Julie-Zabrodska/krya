@@ -10,6 +10,12 @@ def make_valid_payload(method: str, params: dict | None = None) -> dict:
 
     return payload
 
+def make_valid_request(method: str, params: dict | None = None) -> dict:
+    payload = make_valid_payload(method = method, params = params)
+    sensor_response = send_post(**payload)
+    return sensor_response.get("result", {})
+    
+
 
 def send_post(method: str | None = None, params: dict | None = None, jsonrpc: str | None = None, id: int | None= None):
     request_body = {}
@@ -27,7 +33,7 @@ def send_post(method: str | None = None, params: dict | None = None, jsonrpc: st
         request_body["id"] = id
 
     request_headers = {"Authorization": "0000"}
-    res = requests.post("http://0.0.0.0:9898/rpc", json=request_body, headers=request_headers)
+    res = requests.post("http://0.0.0.0:9898/rpc", json = request_body, headers = request_headers)
 
     try:
         return res.json()
@@ -36,17 +42,11 @@ def send_post(method: str | None = None, params: dict | None = None, jsonrpc: st
 
 
 def get_sensor_info():
-    payload = make_valid_payload(method="get_info")
-    sensor_response = send_post(**payload)
-    sensor_info = sensor_response.get("result", {})
-    return sensor_info
+    return make_valid_request("get_info")
 
 
 def get_sensor_reading():
-    payload = make_valid_payload(method="get_reading")
-    sensor_response = send_post(**payload)
-    sensor_reading = sensor_response.get("result", {})
-    return sensor_reading
+    return make_valid_request("get_reading")
 
 
 def test_sanity():
