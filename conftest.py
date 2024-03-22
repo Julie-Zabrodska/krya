@@ -136,7 +136,7 @@ def reset_to_factory(make_valid_request):
 @pytest.fixture
 def update_firmware(make_valid_request):
     def inner(version: str):
-        return make_valid_request(SensorMethod.UPDATE_FIRMWARE, {"version": version})
+        return make_valid_request(SensorMethod.UPDATE_FIRMWARE)
 
     return inner
 
