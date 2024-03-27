@@ -156,7 +156,7 @@ def reset_sensor_to_factory(make_valid_request):
 
 @pytest.fixture(scope = "session")
 def update_firmware(make_valid_request):
-    def inner(version: str):
+    def inner():
         return make_valid_request(SensorMethod.UPDATE_FIRMWARE)
 
     return inner
