@@ -96,9 +96,9 @@ def test_update_sensor_firmware(get_sensor_info, update_firmware):
         current_firmware_version = wait(
             func=get_sensor_info,
             condition=lambda x: isinstance(x, dict),
-            tries=10,
-            timeout=3,
-        )["firmware_version"]
+            tries=15,
+            timeout=1,
+        ).get("firmware_version")
 
         assert current_firmware_version == original_firmware_version + 1
         original_firmware_version += 1
