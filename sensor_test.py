@@ -1,5 +1,8 @@
 from conftest import wait
 from time import sleep
+import logging
+
+log = logging.getLogger(__name__)
 
 
 def test_sanity(get_sensor_info, get_sensor_reading):
@@ -33,24 +36,17 @@ def test_sanity(get_sensor_info, get_sensor_reading):
 
 
 def test_reboot(get_sensor_info, reboot_sensor):
-    """
-    Steps:
-        1. Get original sensor info
-        2. Reboot sensor
-        3. Wait for sensor to come back online
-        4. Get current sensor info
-        5. Validate that info from step 1 is equal to info from step 4
-    """
-    print("Get original sensor info")
+    
+    log.info("Get original sensor info")
     sensor_info_before_reboot = get_sensor_info()
 
-    print("Reboot sensor")
+    log.info("Reboot sensor")
     reboot_response = reboot_sensor()
     assert (
         reboot_response == "rebooting"
     ), "Sensor didn't return proper text in response to reboot request"
 
-    print("Wait for sensor to come back online")
+    log.info("Wait for sensor to come back online")
     sensor_info_after_reboot = wait(
         func=get_sensor_info,
         condition=lambda x: isinstance(x, dict),
@@ -58,7 +54,7 @@ def test_reboot(get_sensor_info, reboot_sensor):
         timeout=1,
     )
 
-    print("Validate info from step1 is equal to info from step4")
+    log.info("Validate info from step1 is equal to info from step4")
     assert (
         sensor_info_before_reboot == sensor_info_after_reboot
     ), "Sensor info after reboot doesn't match sensor info before reboot"
@@ -66,33 +62,51 @@ def test_reboot(get_sensor_info, reboot_sensor):
 
 def test_set_sensor_name(get_sensor_info, set_sensor_name):
     new_name = "new_name"
+    log.info(f"Set sensor name to {new_name}")
     set_sensor_name(new_name)
+
+    log.info("Get sensor info")
     sensor_info = get_sensor_info()
-    assert sensor_info["name"] == new_name, f"Sensor name is not set to '{new_name}'"
+
+    log.info("Validate that current sensor name matches the name set in Step 1")
+    assert sensor_info.get("name") == new_name, f"Sensor name is not set to '{new_name}'"
 
 
 def test_set_sensor_reading_interval(
-    get_sensor_info, set_reading_interval, get_sensor_reading
+    get_sensor_info, set_sensor_reading_interval, get_sensor_reading
 ):
     reading_interval = 1
-    sensor_info = set_reading_interval(reading_interval)
+
+    log.info("Set sensor reading interval to 1")
+    sensor_info = set_sensor_reading_interval(reading_interval)
+
+    log.info("Validate that sensor reading interval is set to interval from Step 1")
     assert sensor_info["reading_interval"] == reading_interval
 
+    log.info("Get sensor reading")
     initial_reading = get_sensor_reading()
+
+    log.info("Wait for interval specified in Step 1")
     sleep(reading_interval)
+    
+    log.info("Get sensor reading")
     final_reading = get_sensor_info()
+    
+    log.info("Validate that reading from Step 4 doesn't equal reading from Step 6")
     assert (
         initial_reading != final_reading
     ), "Sensor reading did not change after waiting for specified interval"
 
 
-def test_update_sensor_firmware(get_sensor_info, update_firmware):
+def test_update_sensor_firmware(get_sensor_info, update_sensor_firmware):
 
+    log.info("Get original sensor firmware version")
     original_firmware_version = get_sensor_info()["firmware_version"]
     max_firmware_version = 15
 
+    log.info("Request firmware updates up until sensor version is 15")
     while original_firmware_version < max_firmware_version:
-        update_firmware()
+        update_sensor_firmware()
         current_firmware_version = wait(
             func=get_sensor_info,
             condition=lambda x: isinstance(x, dict),
@@ -100,9 +114,16 @@ def test_update_sensor_firmware(get_sensor_info, update_firmware):
             timeout=1,
         ).get("firmware_version")
 
+        log.info("Check that the version increased by 1 in each loop iteration")
         assert current_firmware_version == original_firmware_version + 1
         original_firmware_version += 1
 
-    update_response = update_firmware()
+    log.info("Request another firmware update")
+    update_response = update_sensor_firmware()
+
+    log.info("Validate that sensor is already at max version")
     assert update_response == "already at latest firmware version"
+
+    log.info("Validate that sensor is still at max version")
     assert get_sensor_info()["firmware_version"] == max_firmware_version
+    
