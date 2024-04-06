@@ -34,13 +34,13 @@ class SensorInfo:
         
         if not isinstance(self.firmware_version, int):
             raise TypeError("'firmware_version' should be an integer")
-        if self.firmware_version == "":
-            raise ValueError("'firmware_version' should not be empty")
+        if not 10 <= self.firmware_version <= 15:
+            raise ValueError("'firmware_version' is not within the range from 10 to 15")
         
         if not isinstance(self.reading_interval, int):
-            raise TypeError("'reading_interval' should be a float")
-        if self.reading_interval == "":
-            raise ValueError("'reading_interval' should not be empty")
+            raise TypeError("'reading_interval' should be an integer")
+        if not self.reading_interval >=1:
+            raise ValueError("'reading_interval' should be equal or more than 1")
 
         
 
