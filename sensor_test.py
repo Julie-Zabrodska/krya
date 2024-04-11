@@ -72,6 +72,22 @@ def test_set_sensor_name(get_sensor_info, set_sensor_name):
     log.info("Validate that current sensor name matches the name set in Step 1")
     assert sensor_info.name == new_name, f"Sensor name is not set to '{new_name}'"
 
+    
+def test_set_empty_sensor_name(get_sensor_info, set_sensor_name):
+    log.info("Get original sensor name")
+    original_sensor_name = get_sensor_info().name
+    empty_name = ""
+    log.info("Set sensor name to an empty string")
+    set_sensor_name(empty_name)
+    sensor_info = get_sensor_info()
+    log.info("Validate that sensor responds with an error")
+    assert sensor_info.name == original_sensor_name, "Sensor responded with unexpected name"
+
+    log.info("Get current sensor name")
+    current_sensor_name = sensor_info.name
+    log.info("Validate that sensor name didn't change")
+    assert current_sensor_name == original_sensor_name
+
 
 def test_set_sensor_reading_interval(
     get_sensor_info, set_sensor_reading_interval, get_sensor_reading
@@ -99,13 +115,25 @@ def test_set_sensor_reading_interval(
     ), "Sensor reading did not change after waiting for specified interval"
 
 
+
+def test_set_invalid_sensor_reading_interval(get_sensor_info, set_sensor_reading_interval):
+
+    log.info("Get original sensor reading interval")
+    invalid_interval = -1
+    log.info("Request reading interval update to invalid interval")
+    set_sensor_reading_interval(invalid_interval)
+    log.info("Check that sensor responds with an error")
+    sensor_info = get_sensor_info()
+    
+
+
 def test_update_sensor_firmware(get_sensor_info, update_sensor_firmware):
 
     log.info("Get original sensor firmware version")
     original_firmware_version = get_sensor_info().firmware_version
     max_firmware_version = 15
 
-    log.info("Request firmware updates up until sensor version is 15")
+    log.info("Request firmware update up until sensor version is 15")
     while original_firmware_version < max_firmware_version:
         update_sensor_firmware()
         current_firmware_version = wait(
