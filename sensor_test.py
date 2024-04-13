@@ -117,14 +117,19 @@ def test_set_sensor_reading_interval(
 
 
 def test_set_invalid_sensor_reading_interval(get_sensor_info, set_sensor_reading_interval):
-
+    
     log.info("Get original sensor reading interval")
+    original_interval = get_sensor_info().reading_interval
     invalid_interval = -1
     log.info("Request reading interval update to invalid interval")
     set_sensor_reading_interval(invalid_interval)
     log.info("Check that sensor responds with an error")
     sensor_info = get_sensor_info()
-    
+    assert sensor_info.reading_interval == original_interval, "Sensor responded with unexpected reading interval"
+    log.info("Get current sensor reading interval")
+    current_interval = sensor_info.reading_interval
+    log.info("Validate that sensor reading interval didn't change")
+    assert current_interval == original_interval, "Sensor reading interval changed unexpectedly"
 
 
 def test_update_sensor_firmware(get_sensor_info, update_sensor_firmware):
