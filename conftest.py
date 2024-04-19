@@ -8,6 +8,7 @@ import logging
 
 log = logging.getLogger(__name__)
 
+
 @dataclass
 class SensorInfo:
     name: str
@@ -21,28 +22,27 @@ class SensorInfo:
             raise TypeError("'name' should be a string")
         if self.name == "":
             raise ValueError("'name' should not be empty")
-        
+
         if not isinstance(self.hid, str):
             raise TypeError("'hid' should be a string")
         if self.hid == "":
             raise ValueError("'hid' should not be empty")
-        
+
         if not isinstance(self.model, str):
             raise TypeError("'model' should be a string")
         if self.model == "":
             raise ValueError("'model' should not be empty")
-        
+
         if not isinstance(self.firmware_version, int):
             raise TypeError("'firmware_version' should be an integer")
         if not 10 <= self.firmware_version <= 15:
             raise ValueError("'firmware_version' is not within the range from 10 to 15")
-        
+
         if not isinstance(self.reading_interval, int):
             raise TypeError("'reading_interval' should be an integer")
-        if not self.reading_interval >=1:
+        if not self.reading_interval >= 1:
             raise ValueError("'reading_interval' should be equal or more than 1")
 
-        
 
 class SensorMethod(Enum):
     GET_INFO = "get_info"
@@ -63,9 +63,7 @@ def make_valid_payload(method: SensorMethod, params: dict | None = None) -> dict
     return payload
 
 
-def wait(
-    func: Callable, condition: Callable, tries: int, timeout: int, **kwargs
-):
+def wait(func: Callable, condition: Callable, tries: int, timeout: int, **kwargs):
     for i in range(tries):
         try:
             log.debug(
@@ -84,10 +82,8 @@ def wait(
         log.debug(f"Sleeping for {timeout} seconds")
         sleep(timeout)
 
-    log.debug(
-        "Exhausted all tries, condition evaluates to False, returning None"
-    )
-    return   
+    log.debug("Exhausted all tries, condition evaluates to False, returning None")
+    return
 
 
 def pytest_addoption(parser):
@@ -100,22 +96,22 @@ def pytest_addoption(parser):
     parser.addoption("--sensor-pin", action="store", default="0000", help="Sensor pin")
 
 
-@pytest.fixture(scope = "session")
+@pytest.fixture(scope="session")
 def sensor_host(request):
     return request.config.getoption("--sensor-host")
 
 
-@pytest.fixture(scope = "session")
+@pytest.fixture(scope="session")
 def sensor_port(request):
     return request.config.getoption("--sensor-port")
 
 
-@pytest.fixture(scope = "session")
+@pytest.fixture(scope="session")
 def sensor_pin(request):
     return request.config.getoption("--sensor-pin")
 
 
-@pytest.fixture(scope = "session")
+@pytest.fixture(scope="session")
 def send_post(sensor_host, sensor_port, sensor_pin):
     def _send_post(
         method: SensorMethod | None = None,
@@ -149,25 +145,31 @@ def send_post(sensor_host, sensor_port, sensor_pin):
     return _send_post
 
 
-@pytest.fixture(scope = "session")
+@pytest.fixture(scope="session")
 def make_valid_request(send_post):
-    def _make_valid_request(
-        method: SensorMethod, params: dict | None = None
-    ) -> dict:
+    def _make_valid_request(method: SensorMethod, params: dict | None = None) -> dict:
         payload = make_valid_payload(method=method, params=params)
         sensor_response = send_post(**payload)
-        return sensor_response.get("result", {})
+        return sensor_response
 
     return _make_valid_request
 
 
-@pytest.fixture(scope = "session")
+@pytest.fixture(scope="session")
 def get_sensor_info(make_valid_request):
     def _get_sensor_info():
         log.info("Get sensor info")
         sensor_response = make_valid_request(SensorMethod.GET_INFO)
-        return SensorInfo(**sensor_response)
-    
+        result = None
+
+        if "result" in sensor_response and isinstance(sensor_response["result"], dict):
+            result = SensorInfo(**sensor_response["result"])
+
+        if "error" in sensor_response:
+            result = sensor_response["error"]
+
+        return result
+
     return _get_sensor_info
 
 
@@ -175,66 +177,118 @@ def get_sensor_info(make_valid_request):
 def get_sensor_reading(make_valid_request):
     def _get_sensor_reading():
         log.info("Get sensor reading")
-        return make_valid_request(SensorMethod.GET_READING)
+        sensor_response = make_valid_request(SensorMethod.GET_READING)
+        result = None
+
+        if isinstance(sensor_response, dict):
+            if "result" in sensor_response:
+                if isinstance(sensor_response["result"], float):
+                    result = sensor_response["result"]
+
+        if "error" in sensor_response:
+            result = sensor_response["error"]
+
+        return result
 
     return _get_sensor_reading
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def set_sensor_name(make_valid_request):
-    def _get_sensor_name(name: str):
+    def _set_sensor_name(name: str):
         log.info("Set sensor name to %s", name)
-        return make_valid_request(SensorMethod.SET_NAME, {"name": name})
+        sensor_response = make_valid_request(SensorMethod.SET_NAME, {"name": name})
+        result = None
 
-    return _get_sensor_name
+        if "result" in sensor_response:
+            result = SensorInfo(**sensor_response["result"])
+
+        if "error" in sensor_response:
+            result = sensor_response["error"]
+
+        return result
+
+    return _set_sensor_name
 
 
 @pytest.fixture(scope="session")
 def get_sensor_methods(make_valid_request):
     def _get_sensor_methods():
         log.info("Get sensor methods")
-        return make_valid_request(SensorMethod.GET_METHODS)
+        sensor_response = make_valid_request(SensorMethod.GET_METHODS)
+        result = None
+
+        if "result" in sensor_response:
+            result = SensorInfo(**sensor_response["result"])
+
+        if "error" in sensor_response:
+            result = sensor_response["error"]
+
+        return result
 
     return _get_sensor_methods
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def set_sensor_reading_interval(make_valid_request):
     def _set_sensor_reading_interval(interval: int):
         log.info("Set sensor reading interval to %d seconds", interval)
-        return make_valid_request(
+        sensor_response = make_valid_request(
             SensorMethod.SET_READING_INTERVAL, {"interval": interval}
         )
+        result = None
+
+        if "result" in sensor_response:
+            result = SensorInfo(**sensor_response["result"])
+
+        if "error" in sensor_response:
+            result = sensor_response["error"]
+
+        return result
 
     return _set_sensor_reading_interval
 
 
-@pytest.fixture(scope = "session")
+@pytest.fixture(scope="session")
 def reset_sensor_to_factory(make_valid_request, get_sensor_info):
     def _reset_sensor_to_factory():
         log.info("Send reset firmware request to sensor")
         sensor_response = make_valid_request(SensorMethod.RESET_TO_FACTORY)
-        if sensor_response != "resetting":
-            raise RuntimeError(
-                "Sensor didn't respond to factory reset properly"
+        if "result" in sensor_response:
+            if sensor_response["result"] != "resetting":
+                raise RuntimeError("Sensor didn't respond to factory reset properly")
+
+            sensor_info = wait(
+                get_sensor_info,
+                lambda x: isinstance(x, SensorInfo),
+                tries=15,
+                timeout=1,
             )
+            if not sensor_info:
+                raise RuntimeError("Sensor didn't reset to factory property")
 
-        sensor_info = wait(
-            get_sensor_info, lambda x: isinstance(x, SensorInfo), tries=15, timeout=1
-        )
-        if not sensor_info:
-            raise RuntimeError("Sensor didn't reset to factory properly")
+            return sensor_info
 
-        return sensor_info
+        if "error" in sensor_response:
+            return sensor_response["error"]
 
     return _reset_sensor_to_factory
 
 
-@pytest.fixture(scope = "session")
+@pytest.fixture(scope="session")
 def update_sensor_firmware(make_valid_request):
     def _update_sensor_firmware():
         log.info("Send firmware update request to sensor")
-        return make_valid_request(SensorMethod.UPDATE_FIRMWARE)
+        sensor_response = make_valid_request(SensorMethod.UPDATE_FIRMWARE)
+        result = None
+
+        if "result" in sensor_response:
+            result = SensorInfo(**sensor_response["result"])
+
+        if "error" in sensor_response:
+            result = sensor_response["error"]
+
+        return result
 
     return _update_sensor_firmware
 
@@ -243,7 +297,16 @@ def update_sensor_firmware(make_valid_request):
 def reboot_sensor(make_valid_request):
     def _reboot_sensor():
         log.info("Send reboot request to sensor")
-        return make_valid_request(SensorMethod.REBOOT)
+        sensor_response = make_valid_request(SensorMethod.REBOOT)
+        result = "rebooting"
+
+        if "result" in sensor_response and isinstance(sensor_response["result"], dict):
+            result = SensorInfo(**sensor_response)
+
+        if "error" in sensor_response:
+            result = sensor_response["error"]
+
+        return result
 
     return _reboot_sensor
 
@@ -263,6 +326,3 @@ def ensure_sensor_factory_settings(
     if current_sensor_settings != factory_sensor_settings:
         log.info("Detected non-factory settings, resetting sensor")
         reset_sensor_to_factory()
-
-
- 
