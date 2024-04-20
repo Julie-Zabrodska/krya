@@ -162,7 +162,7 @@ def get_sensor_info(make_valid_request):
         sensor_response = make_valid_request(SensorMethod.GET_INFO)
         result = None
 
-        if "result" in sensor_response and isinstance(sensor_response["result"], dict):
+        if "result" in sensor_response:
             result = SensorInfo(**sensor_response["result"])
 
         if "error" in sensor_response:
@@ -180,10 +180,8 @@ def get_sensor_reading(make_valid_request):
         sensor_response = make_valid_request(SensorMethod.GET_READING)
         result = None
 
-        if isinstance(sensor_response, dict):
-            if "result" in sensor_response:
-                if isinstance(sensor_response["result"], float):
-                    result = sensor_response["result"]
+        if "result" in sensor_response:
+            result = sensor_response["result"]
 
         if "error" in sensor_response:
             result = sensor_response["error"]
@@ -219,7 +217,7 @@ def get_sensor_methods(make_valid_request):
         result = None
 
         if "result" in sensor_response:
-            result = SensorInfo(**sensor_response["result"])
+            result = sensor_response["result"]
 
         if "error" in sensor_response:
             result = sensor_response["error"]
@@ -283,7 +281,7 @@ def update_sensor_firmware(make_valid_request):
         result = None
 
         if "result" in sensor_response:
-            result = SensorInfo(**sensor_response["result"])
+            result = sensor_response["result"]
 
         if "error" in sensor_response:
             result = sensor_response["error"]
@@ -300,8 +298,8 @@ def reboot_sensor(make_valid_request):
         sensor_response = make_valid_request(SensorMethod.REBOOT)
         result = "rebooting"
 
-        if "result" in sensor_response and isinstance(sensor_response["result"], dict):
-            result = SensorInfo(**sensor_response)
+        if "result" in sensor_response:
+            result = sensor_response["result"]
 
         if "error" in sensor_response:
             result = sensor_response["error"]
